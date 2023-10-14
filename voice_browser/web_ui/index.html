@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ウェブページのタイトル</title>
+    <!--link rel="stylesheet" href="styles.css"-->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js" integrity="sha512-6+YN/9o9BWrk6wSfGxQGpt3EUK6XeHi6yeHV+TYD2GR0Sj/cggRpXr1BrAQf0as6XslxomMUxXp2vIl+fv0QRA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</head>
+<body>
+  <div>
+    <button id="playButton">再生</button>
+    <button id="pauseButton">一時停止</button>
+    <button id="stopButton">停止</button>
+    <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="1">
+    <progress id="progressBar" value="0" max="1"></progress>
+    </div>
+    <div id="recommendList"></div>
+    <div id="playList"></div>
+    <script>
+        var sound;
+        var playlist = ['menuettm.mp3', 'menuettm.mp3']; // 再生する音声ファイルのリスト
+        var currentTrack = 0; // 現在のトラックのインデックス
+
+        var recommends = [];
+        var playItems = [];
+
+        function addRecommend(item) {
+          recommends.push(item);
+          var recommendList = document.getElementById('recommendList');
+          var li = document.createElement('li');
+          li.textContent = item;
+          recommendList.appendChild(li);
+        }
+
+        function addPlayItem(item) {
+          playItems.push(item);
+          var playList = document.getElementById('playList');
+          var perItem = document.createElement('div');
+          perItem.textContent = item.text;
+          playList.appendChild(li);
+        }
+
+        function addCheckBox(parent, text, callback) {
+          var label = document.createElement('label');
+          var checkbox = document.createElement('input');
+          checkbox.type = 'checkbox';
+          checkbox.addEventListener('change', callback);
+          label.appendChild(checkbox);
+          label.appendChild(document.createTextNode(text));
+          parent.appendChild(label);
+        }
+
+        function addButton(parent, text, callback) {
+          var button = document.createElement('button');
+          button.textContent = text;
+          button.addEventListener('click', callback);
+          parent.appendChild(button);
+        }
+
+        // 最初のトラックをロード
+        loadTrack(currentTrack);
+
+        function loadTrack(trackIndex) {
+            sound = new Howl({
+                src: [playlist[trackIndex]],
+                autoplay: false,
+                loop: false
+            });
+
+            // 音声再生が終了したときのイベントハンドラ
+            sound.on('end', function() {
+                // 次のトラックが存在する場合、次のトラックをロードし再生
+                if (currentTrack < playlist.length - 1) {
+                    currentTrack++;
+                    loadTrack(currentTrack);
+                    sound.play();
+                }
+            });
+        }
+
+
+        // 再生ボタンのクリックハンドラ
+        document.getElementById('playButton').addEventListener('click', function() {
+            sound.play(); // 音声を再生
+        });
+
+        // 一時停止ボタンのクリックハンドラ
+        document.getElementById('pauseButton').addEventListener('click', function() {
+            sound.pause(); // 音声を一時停止
+        });
+
+        // 停止ボタンのクリックハンドラ
+        document.getElementById('stopButton').addEventListener('click', function() {
+            sound.stop(); // 音声を停止
+        });
+        // 音量調整スライダーの変更イベントハンドラ
+        document.getElementById('volumeSlider').addEventListener('input', function() {
+            var volume = parseFloat(this.value); // スライダーの値を取得
+            sound.volume(volume); // 音量を設定
+        });
+            // 音声再生の進捗バーを更新する関数
+        function updateProgressBar() {
+            var progressBar = document.getElementById('progressBar');
+            var currentTime = sound.seek(); // 現在の再生位置を取得
+            progressBar.value = currentTime / sound.duration(); // 進捗バーを更新
+        }
+
+        // 定期的に進捗バーを更新
+        setInterval(updateProgressBar, 100);
+           // 音声再生の進捗バーをクリックした際のイベントハンドラ
+        document.getElementById('progressBar').addEventListener('click', function(e) {
+            var progressBar = document.getElementById('progressBar');
+            var rect = progressBar.getBoundingClientRect(); // 進捗バーの位置情報を取得
+            var clickX = e.clientX - rect.left; // クリックされた位置を計算
+            var progressBarWidth = rect.width; // 進捗バーの幅を取得
+            var seekPercentage = clickX / progressBarWidth; // クリック位置の割合を計算
+            var seekTime = seekPercentage * sound.duration(); // 再生位置を計算
+            sound.seek(seekTime); // 音声再生位置を設定
+        });
+
+    </script>
+
+</body>
+</html>
+
