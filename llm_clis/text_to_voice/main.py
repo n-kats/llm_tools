@@ -106,8 +106,9 @@ def text_to_wav(text: str, url: str, output: Path, max_length=300):
         sound = AudioSegment.empty()
         for i, text in enumerate(texts):
             sound += AudioSegment.from_file(Path(tmpdir) / f"{i}.wav")
-        sound.export(output, format=os.path.splitext(output.name))
-    print("done", output)
+        sound.export(output, format=os.path.splitext(output.name)[-1][1:])
+
+    print(f"done: {output}", file=sys.stderr)
 
 
 def split_text(text: str, max_length: int, separetors: list[str]):
@@ -134,7 +135,8 @@ def _text_to_wav(text: str, url: str, output: Path):
     )
 
     if not response.ok:
-        raise click.BadParameter(f"voicevox api returns {response.status_code}")
+        raise click.BadParameter(
+            f"voicevox api returns {response.status_code}")
 
     synthesis_response = requests.post(
         f"{url}/synthesis?speaker=1",
