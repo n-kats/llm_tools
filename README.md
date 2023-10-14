@@ -10,6 +10,12 @@ OPENAI_API_KEY=ChatGPTのAPIキー
 VOICEVOX_URL=http://localhost:50021
 ```
 
+## 前提
+```
+$ poetry install
+$ poetry shell
+```
+
 ## ずんだもん解説
 ### サマリーダウンロード
 ```
@@ -37,7 +43,7 @@ find _cache/daily_summary/ -name "*.json" -type f | while read -r line; do
   day="$(basename "$(dirname "$(dirname "$line")")")"
   cat="$(basename "$(dirname "$line")")"
   id="$(basename "$line" | sed "s/.json$//g")"
-  output="_cache/daily/$day/$cat/$id.wav"
+  output="_cache/daily/$day/$cat/$id.mp3"
   if [[ ! -e "$output" ]]; then
     continue
   fi
