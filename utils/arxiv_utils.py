@@ -142,3 +142,20 @@ class UpdateTimeStopCondition:
         path.parent.mkdir(parents=True, exist_ok=True)
         with open(path, "w") as f_out:
             print(self.__limit.isoformat(), file=f_out)
+
+
+def to_arxiv_id(url):
+    id_ = [x for x in url.split("/") if x != ""][-1]
+    if id_.endswith(".pdf"):
+        id_ = id_[:-4]
+    return id_
+
+def from_arxiv_url(url: str) -> ArxivSummary:
+    url = to_arxiv_id(url)
+    search = arxiv.Search(id_list=[url])
+    results = list(search.results())
+    if not results:
+        raise ValueError(f"arxiv id {url} is not found.")
+    if len(results) > 1:
+        raise ValueError(f"arxiv id {url} is not unique.")
+    return ArxivSummary.from_arxiv(results[0])

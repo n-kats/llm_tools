@@ -59,7 +59,7 @@ class GoogleDriveClient:
         output_path=Path(output_path)
         assert input_file.is_file()
         parent = self.mkdir(output_path.parent)
-        if self.__exist_file(output_path.name, parent) is not None:
+        if self.__exist_file(output_path.name, parent):
             if overwrite:
                 self.__delete_file(output_path.name, parent)
             else:

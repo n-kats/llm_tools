@@ -1,14 +1,15 @@
 import os
-import tempfile
-from pydub import AudioSegment
 import sys
-import openai
-import click
-import arxiv
-import requests
 from pathlib import Path
+
+import click
+import openai
 from dotenv import load_dotenv
+
 from llm_tools.utils.click_utils import set_completions_command
+from utils.arxiv_utils import from_arxiv_url, to_arxiv_id
+from utils.cache_utils import cache_output_text
+from utils.voice_utils import text_to_wav
 
 APP_NAME = "text-to-voice"
 
@@ -22,35 +23,29 @@ def main():
 @click.option("--url", type=str, required=True)
 @click.option("--output", type=Path, required=True)
 @click.option("--dotenv", type=Path)
-def arxiv_command(url: str, output: Path | None, dotenv: Path | None):
+def arxiv_command(url: str, output: Path, dotenv: Path | None):
     if dotenv is not None:
         load_dotenv(dotenv)
     openai.api_key = os.environ["OPENAI_API_KEY"]
     voicevox_url = os.environ["VOICEVOX_URL"]
-    url = to_arxiv_id(url)
-    search = arxiv.Search(id_list=[url])
-    results = list(search.results())
-    if not results:
-        raise click.BadParameter(f"arxiv id {url} is not found.")
-    if len(results) > 1:
-        raise click.BadParameter(f"arxiv id {url} is not unique.")
-    summary = results[0].summary
-    print(summary)
-    if Path("description.txt").exists():
-        description = Path("description.txt").read_text()
-        description = description[: len(description) // 2]
-    else:
-        description = arxiv_summary_to_description(summary)
-        Path("description.txt").write_text(description)
-    print(description)
-    text_to_wav(description, voicevox_url, output)
+    id_ = to_arxiv_id(url)
+    summary = cache_output_text(
+        lambda: from_arxiv_url(url).summary, output / f"{id_}_summary.txt"
+    )
+    print(summary, file=sys.stderr)
+    description = cache_output_text(
+        lambda: arxiv_summary_to_description(summary),
+        output / f"{id_}_description.txt",
+    )
+    print(description, file=sys.stderr)
+    text_to_wav(description, voicevox_url, output/f"{id_}.mp3")
 
 
 @main.command()
 @click.option("--input", "input_", type=click.File("r"), required=True)
 @click.option("--output", type=Path, required=True)
 @click.option("--dotenv", type=Path)
-def summary_text(input_, output: Path | None, dotenv: Path | None):
+def summary_text(input_, output: Path, dotenv: Path | None):
     if dotenv is not None:
         load_dotenv(dotenv)
     openai.api_key = os.environ["OPENAI_API_KEY"]
@@ -58,22 +53,12 @@ def summary_text(input_, output: Path | None, dotenv: Path | None):
     summary = input_.read()
 
     print(summary, file=sys.stderr)
-    output.parent.mkdir(parents=True, exist_ok=True)
-    description_path = Path(output.parent / (output.name + ".description.txt"))
-    if description_path.exists():
-        description = description_path.read_text()
-    else:
-        description = arxiv_summary_to_description(summary)
-        description_path.write_text(description)
+    description = cache_output_text(
+        lambda: arxiv_summary_to_description(summary),
+        Path(output.parent / (output.name + ".description.txt"))
+    )
     print(description, file=sys.stderr)
     text_to_wav(description, voicevox_url, output)
-
-
-def to_arxiv_id(url):
-    id_ = [x for x in url.split("/") if x != ""][-1]
-    if id_.endswith(".pdf"):
-        id_ = id_[:-4]
-    return id_
 
 
 def arxiv_summary_to_description(summary: str):
@@ -96,59 +81,6 @@ B. 説明以外の言及はしないでください
         model="gpt-3.5-turbo", messages=[{"role": "user", "content": input_}]
     )
     return completion.choices[0].message.content
-
-
-def text_to_wav(text: str, url: str, output: Path, max_length=300):
-    texts = split_text(text, max_length, separetors=["。", "、", ". "])
-    with tempfile.TemporaryDirectory() as tmpdir:
-        for i, text in enumerate(texts):
-            _text_to_wav(text, url, Path(tmpdir) / f"{i}.wav")
-        sound = AudioSegment.empty()
-        for i, text in enumerate(texts):
-            sound += AudioSegment.from_file(Path(tmpdir) / f"{i}.wav")
-        sound.export(output, format=os.path.splitext(output.name)[-1][1:])
-
-    print(f"done: {output}", file=sys.stderr)
-
-
-def split_text(text: str, max_length: int, separetors: list[str]):
-    if len(text) < max_length:
-        return [text]
-
-    sub = text[:max_length]
-    candidates = [
-        sub.rsplit(separetor, 1)[0] + separetor
-        for separetor in separetors
-        if separetor in sub
-    ]
-    if candidates:
-        pos = max([len(x) for x in candidates])
-    else:
-        pos = max_length
-
-    return [text[:pos]] + split_text(text[pos:], max_length, separetors)
-
-
-def _text_to_wav(text: str, url: str, output: Path):
-    response = requests.post(
-        f"{url}/audio_query", params={"speaker": "1", "text": text}
-    )
-
-    if not response.ok:
-        raise click.BadParameter(
-            f"voicevox api returns {response.status_code}")
-
-    synthesis_response = requests.post(
-        f"{url}/synthesis?speaker=1",
-        headers={"Context-Type": "application/json"},
-        data=response.content,
-    )
-    if not synthesis_response.ok:
-        raise click.BadParameter(
-            f"voicevox api returns {synthesis_response.status_code}"
-        )
-    with output.open("wb") as f:
-        f.write(synthesis_response.content)
 
 
 set_completions_command(APP_NAME, main)
