@@ -10,6 +10,7 @@ from llm_tools.utils.click_utils import set_completions_command
 from utils.arxiv_utils import from_arxiv_url, to_arxiv_id
 from utils.cache_utils import cache_output_text
 from utils.voice_utils import text_to_wav
+from utils.prompt_utils import *
 
 APP_NAME = "text-to-voice"
 
@@ -19,11 +20,37 @@ def main():
     pass
 
 
+class SummaryText(BaseModel):
+    summary: str
+
+
+def build_tactic(prompt_path: Path, prompt_root: Optional[Path], max_retry: int, verbose: bool):
+    builder = TacticBuilder("create_description", input_type=SummaryText)
+
+    builder.add_typed_prompt(
+        "summary_to_description",
+        adapter=Adapter.identity(SummaryText),
+        typed_prompt=TypedPrompt(
+            load_template(prompt_path),
+            input_type=SummaryText,
+            output_type=str
+        ),
+        executor=Executor(call_gpt, max_retry)
+    )
+    if verbose:
+        builder.show_typed_prompts()
+    return builder.build()
+
+
 @main.command(name="arxiv")
 @click.option("--url", type=str, required=True)
 @click.option("--output", type=Path, required=True)
 @click.option("--dotenv", type=Path)
-def arxiv_command(url: str, output: Path, dotenv: Path | None):
+@click.option("--prompt_path", type=Path, default=Path(__file__).parent / "prompts/templates/arxiv_summary_v1.j2")
+@click.option("--prompt_root", type=Path)
+@click.option("--max_retry", type=int, default=3)
+@click.option("--verbose", is_flag=True)
+def arxiv_command(url: str, output: Path, dotenv: Path | None, prompt_path: Path, prompt_root: Optional[Path], max_retry: int, verbose: bool):
     if dotenv is not None:
         load_dotenv(dotenv)
     openai.api_key = os.environ["OPENAI_API_KEY"]
@@ -33,8 +60,16 @@ def arxiv_command(url: str, output: Path, dotenv: Path | None):
         lambda: from_arxiv_url(url).summary, output / f"{id_}_summary.txt"
     )
     print(summary, file=sys.stderr)
+
+    tactic = build_tactic(
+        prompt_path,
+        prompt_root,
+        max_retry, verbose)
+
+    print(tactic(SummaryText(summary=summary)), file=sys.stderr)
+
     description = cache_output_text(
-        lambda: arxiv_summary_to_description(summary),
+        lambda: tactic(SummaryText(summary=summary)),
         output / f"{id_}_description.txt",
     )
     print(description, file=sys.stderr)
@@ -45,7 +80,14 @@ def arxiv_command(url: str, output: Path, dotenv: Path | None):
 @click.option("--input", "input_", type=click.File("r"), required=True)
 @click.option("--output", type=Path, required=True)
 @click.option("--dotenv", type=Path)
-def summary_text(input_, output: Path, dotenv: Path | None):
+@click.option("--prompt_path", type=Path, default=Path(__file__).parent / "prompts/templates/arxiv_summary_v1.j2")
+@click.option("--prompt_root", type=Path)
+@click.option("--max_retry", type=int, default=3)
+@click.option("--verbose", is_flag=True)
+def summary_text(
+    input_, output: Path, dotenv: Path | None,
+    prompt_path: Path, prompt_root: Optional[Path], max_retry: int, verbose: bool,
+):
     if dotenv is not None:
         load_dotenv(dotenv)
     openai.api_key = os.environ["OPENAI_API_KEY"]
@@ -53,8 +95,11 @@ def summary_text(input_, output: Path, dotenv: Path | None):
     summary = input_.read()
 
     print(summary, file=sys.stderr)
+    tactic = build_tactic(
+        prompt_path, prompt_root, max_retry, verbose)
+
     description = cache_output_text(
-        lambda: arxiv_summary_to_description(summary),
+        lambda: tactic(SummaryText(summary=summary))[0],
         Path(output.parent / (output.name + ".description.txt"))
     )
     print(description, file=sys.stderr)
