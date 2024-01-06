@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Callable
 
+
 def cache_output_text(fn: Callable[[], str], path: Path):
     if path.exists():
         return path.read_text()

@@ -1,8 +1,7 @@
 from pydantic import BaseModel
-import json
-import time
 from datetime import datetime
-from typing import DefaultDict, List, Sequence, Set
+from collections import defaultdict
+from typing import Sequence, Any
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
@@ -25,7 +24,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 
-class Room(Base, SerializerMixin):
+class Room(Base, SerializerMixin):  # type: ignore
     __tablename__ = "rooms"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, unique=True)
@@ -47,7 +46,7 @@ class Room(Base, SerializerMixin):
         return room
 
 
-class Message(Base, SerializerMixin):
+class Message(Base, SerializerMixin):  # type: ignore
     __tablename__ = "messages"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -111,8 +110,8 @@ html = """
 
 class ConnectionManager:
     def __init__(self):
-        self.__room_to_member: Dict[str, Set[WebSocket]] = DefaultDict(set)
-        self.__mebmer_to_room: Dict[WebSocket, str] = {}
+        self.__room_to_member = defaultdict[str, set[WebSocket]](set)
+        self.__mebmer_to_room = dict[WebSocket, str]()
 
     async def connect(self, websocket: WebSocket, room: str):
         await websocket.accept()
@@ -126,7 +125,7 @@ class ConnectionManager:
         if not self.__room_to_member[room]:
             del self.__room_to_member[room]
 
-    async def broadcast(self, message: dict, room: str, not_send: Sequence = tuple()):
+    async def broadcast(self, message: Any, room: str, not_send: Sequence = tuple()):
         for connection in self.__room_to_member[room]:
             if connection not in not_send:
                 await connection.send_json(message)
@@ -156,7 +155,7 @@ async def get(room: str):
 
 
 @app.get("/api/v1/room_names")
-async def get_room_names() -> List[str]:
+async def get_room_names() -> list[str]:
     session = SessionLocal()
     names = [room.name for room in session.query(Room).all()]
     session.close()
@@ -168,7 +167,7 @@ class RoomQuery(BaseModel):
 
 
 @app.get("/api/v1/history")
-async def get_history(q: RoomQuery) -> List[MessageToRead]:
+async def get_history(q: RoomQuery) -> list[MessageToRead]:
     session = SessionLocal()
     room = Room.find_by_name(session, q.room_name)
     messages = (

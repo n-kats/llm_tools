@@ -1,5 +1,4 @@
 from functools import cached_property
-import time
 from typing import Dict, Sequence, TypeVar, Generic, Callable, Optional, List
 from datetime import datetime
 from pathlib import Path
@@ -35,8 +34,7 @@ def _load_categories(path: Path):
         return [Category(**category) for category in yaml.safe_load(f_in)]
 
 
-default_category_db = DictDB[Category](
-    key_fn=lambda category: category.category_id)
+default_category_db = DictDB[Category](key_fn=lambda category: category.category_id)
 DEFAULT_CATEGORY_FILE = Path(__file__).parent / "arxiv_categories.yml"
 default_category_db.update(_load_categories(DEFAULT_CATEGORY_FILE))
 
@@ -86,8 +84,7 @@ class ArxivSummary(BaseModel):
     @classmethod
     def from_arxiv(cls, result: arxiv.Result):
         return cls(
-            authors=[ArxivAuthor.from_arxiv(author)
-                     for author in result.authors],
+            authors=[ArxivAuthor.from_arxiv(author) for author in result.authors],
             categories=result.categories,
             comment=result.comment,
             doi=result.doi,
@@ -107,18 +104,26 @@ class ArxivSummary(BaseModel):
 
 
 class ArxivRetriver:
-    def __init__(self, max_count_per_request: int, interval_sec: float, stop_condition: Optional[Callable[[ArxivSummary], bool]] = None,):
+    def __init__(
+        self,
+        max_count_per_request: int,
+        interval_sec: float,
+        stop_condition: Optional[Callable[[ArxivSummary], bool]] = None,
+    ):
         self.__max_count_per_request = max_count_per_request
         self.__interval_sec = interval_sec
         self.__stop_condition = stop_condition
 
     def iter_per_category(self, category: str):
         for result in arxiv.Client(
-                page_size=self.__max_count_per_request,
-                delay_seconds=self.__interval_sec).results(
-                arxiv.Search(query=f"cat:{category}",
-                             sort_by=arxiv.SortCriterion.LastUpdatedDate,
-                             sort_order=arxiv.SortOrder.Descending)):
+            page_size=self.__max_count_per_request, delay_seconds=self.__interval_sec
+        ).results(
+            arxiv.Search(
+                query=f"cat:{category}",
+                sort_by=arxiv.SortCriterion.LastUpdatedDate,
+                sort_order=arxiv.SortOrder.Descending,
+            )
+        ):
             result = ArxivSummary.from_arxiv(result)
             if self.__stop_condition is not None and self.__stop_condition(result):
                 break
@@ -149,6 +154,7 @@ def to_arxiv_id(url):
     if id_.endswith(".pdf"):
         id_ = id_[:-4]
     return id_
+
 
 def from_arxiv_url(url: str) -> ArxivSummary:
     url = to_arxiv_id(url)

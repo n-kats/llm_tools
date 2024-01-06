@@ -1,4 +1,3 @@
-import asyncio
 import json
 import sys
 import uuid
@@ -7,7 +6,6 @@ from typing import List, Optional
 
 import click
 import requests
-import websockets
 from websockets.sync.client import connect
 
 from .server import MessageToRead, MessageToWrite
@@ -70,6 +68,7 @@ def send(
     if room is None:
         room = client.new_room()
     history = client.read_history(room)
+    print(history, file=sys.stderr)
 
     message = PromptMessageBuilder(prompt).build(input_, room, user)
     client.send_message(message)
