@@ -260,7 +260,7 @@ class TacticBuilder:
 
 
 def call_gpt(text, model="gpt-3.5-turbo"):
-    completion = openai.ChatCompletion.create(
+    completion = openai.chat.completions.create(
         model=model, messages=[{"role": "user", "content": text}]
     )
     return completion.choices[0].message.content
