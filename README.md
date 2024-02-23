@@ -19,7 +19,7 @@ $ poetry shell
 ## ずんだもん解説
 ### サマリーダウンロード
 ```
-$ python donwload_today_arxiv_summary.py --categories cs.CV math.GT
+$ python download_today_arxiv_summary.py --categories cs.CV math.GT
 ```
 
 ### voicevox起動（GPU使用想定）
@@ -37,17 +37,20 @@ $ text-to-voice summary-text --input 入力ファイル --output 出力ファイ
 以下のコマンドで_cache/daily ディレクトリにファイルが生成される
 
 ```bash
-python donwload_today_arxiv_summary.py --categories cs.CV math.GT
+python download_today_arxiv_summary.py --categories cs.CV math.GT
 find _cache/daily_summary/ -name "*.json" -type f | while read -r line; do
-  echo "$line"
   day="$(basename "$(dirname "$(dirname "$line")")")"
   cat="$(basename "$(dirname "$line")")"
   id="$(basename "$line" | sed "s/.json$//g")"
   output="_cache/daily/$day/$cat/$id.mp3"
-  if [[ ! -e "$output" ]]; then
+  if [[ -e "$output" ]]; then
+    echo skip "$output"
     continue
   fi
-  jq .summary "$line" -r \
-    | text-to-voice summary-text --input - --output "$output" --dotenv .env
+  echo start "$output"
+  text-to-voice summary-text \
+    --input "$line" --output "$output" --dotenv .env \
+    --prompt_path ./llm_clis/text_to_voice/prompts/templates/arxiv_summary_v2.j2 \
+    --tactic sequence
 done
 ```
