@@ -1,4 +1,5 @@
 import re
+import time
 import sys
 from abc import ABC
 from pathlib import Path
@@ -48,11 +49,13 @@ class Adapter(Generic[T_CONTEXT, T_IN]):
 
 
 def fix_json(text: str) -> str:
+    text = text.replace("```json", "").replace("```", "")
     return re.sub(r'(\\[^"])', r"\\\1", text)
 
 
 def _parse(value: str, type_: Type) -> str | BaseModel:
     if issubclass(type_, BaseModel):
+        raw = value
         try:
             json.loads(value)
         except json.JSONDecodeError:
@@ -60,12 +63,14 @@ def _parse(value: str, type_: Type) -> str | BaseModel:
 
         try:
             return type_.parse_raw(value)
-        except json.JSONDecodeError as e:
-            raise RuntimeError(f"JSONデコードエラー\n[元データ]{value}") from e
-        except Exception as e:
+        except json.JSONDecodeError:
             raise RuntimeError(
-                f"パースエラー\n[元データ]{value}\n\n[期待されるフィールド] {list(type_.model_fields.keys())}"
-            ) from e
+                f"JSONデコードエラー\n[元データ]\n{raw}\n[修正]\n{value}"
+            )
+        except Exception:
+            raise RuntimeError(
+                f"パースエラー\n[元データ]{raw}\n\n[期待されるフィールド] {list(type_.model_fields.keys())}"
+            )
     else:
         return value
 
@@ -259,7 +264,15 @@ class TacticBuilder:
         )
 
 
+_last_call = time.perf_counter()
+INTERVAL = 0.5
+
+
 def call_gpt(text, model="gpt-3.5-turbo"):
+    global _last_call
+    now = time.perf_counter()
+    if now - _last_call < INTERVAL:
+        time.sleep(INTERVAL - (now - _last_call))
     completion = openai.chat.completions.create(
         model=model, messages=[{"role": "user", "content": text}]
     )

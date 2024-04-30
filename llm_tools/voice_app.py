@@ -24,8 +24,7 @@ def get_random_audio():
     ]
     i = np.random.randint(len(candidates))
     target = candidates[i]
-    description = (target.parent / (target.name +
-                   ".description.txt")).read_text()
+    description = (target.parent / (target.name + ".description.txt")).read_text()
     return target, description
 
 
@@ -48,17 +47,18 @@ class RandomSampler:
         candidates = [
             p
             for p in root.glob("*/*/*.mp3")
-            if all([
-                self.day_from is None or p.parent.parent.name >= self.day_from,
-                self.day_to is None or p.parent.parent.name <= self.day_to,
-                self.category is None or p.parent.name == self.category,
-                (p.parent / (p.name + ".description.txt")).exists(),
-            ])
+            if all(
+                [
+                    self.day_from is None or p.parent.parent.name >= self.day_from,
+                    self.day_to is None or p.parent.parent.name <= self.day_to,
+                    self.category is None or p.parent.name == self.category,
+                    (p.parent / (p.name + ".description.txt")).exists(),
+                ]
+            )
         ]
         i = np.random.randint(len(candidates))
         target = candidates[i]
-        description = (target.parent / (target.name +
-                       ".description.txt")).read_text()
+        description = (target.parent / (target.name + ".description.txt")).read_text()
         return target, description
 
 
@@ -84,12 +84,11 @@ def main():
                         field.choices = ["math", "physics", "computer"]
                         category = gr.Dropdown(label="カテゴリー")
                         category.choices = ["daily", "weekly", "monthly"]
-                        field.select(set_)
+                        # field.select(set_)
                     with gr.Column(scale=1):
-                        day_from = gr.Textbox(
-                            label="期間(From):YYYYMMDD", max_lines=1)
-                        day_to = gr.Textbox(
-                            label="期間(To):YYYYMMDD", max_lines=1)
+                        day_from = gr.Textbox(label="期間(From):YYYYMMDD", max_lines=1)
+                        day_to = gr.Textbox(label="期間(To):YYYYMMDD", max_lines=1)
+                        print(day_to, day_from)
                 with gr.Row():
                     with gr.Column(scale=1):
                         button = gr.Button("適用")
