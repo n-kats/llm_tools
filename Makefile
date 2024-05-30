@@ -1,4 +1,4 @@
-target = utils llm_tools llm_clis syllabus
+target = utils llm_tools llm_clis syllabus *.py
 
 .PHONY: lint
 lint:

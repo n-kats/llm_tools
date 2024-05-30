@@ -22,9 +22,9 @@ def main():
                 continue
             print(path)
             client.upload_file(
-                path, path.relative_to(
-                    args.target_dir), mimetype, args.overwrite)
+                path, path.relative_to(args.target_dir), mimetype, args.overwrite
+            )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

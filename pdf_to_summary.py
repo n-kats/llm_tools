@@ -15,7 +15,7 @@ def download_pdf(url: str, output_path: Path):
     response = httpx.get(url)
     response.raise_for_status()
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(output_path, 'wb') as f:
+    with open(output_path, "wb") as f:
         f.write(response.content)
 
     return output_path
@@ -25,7 +25,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--url", type=str, required=True)
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--disable_cache",  action="store_true")
+    parser.add_argument("--disable_cache", action="store_true")
     parser.add_argument("--voicevox_url", type=str)
     parser.add_argument("--speaker_id", type=str, default="1")
     parser.add_argument("--speaker_speed", type=float, default=1.5)
@@ -65,8 +65,8 @@ def main():
                 {
                     "role": "user",
                     "content": [to_image_content(page, "PNG")],
-                }
-            ]
+                },
+            ],
         )
         print(f"# {result_path}")
         results.append(result)
@@ -83,9 +83,9 @@ def main():
     speaker = VoiceVoxSpeaker(
         speaker_id=args.speaker_id, speed=args.speaker_speed, url=args.voicevox_url
     )
-    text_to_wav(all_result, speaker, output_root/f"{pdf_id}.mp3")
+    text_to_wav(all_result, speaker, output_root / f"{pdf_id}.mp3")
     print("done!")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

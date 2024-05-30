@@ -22,5 +22,6 @@ def time_json_representation(t: datetime) -> str:
 def day_path_representation(t: datetime) -> str:
     return t.strftime("%Y%m%d")
 
+
 def day_from_path_representation(s: str) -> datetime:
     return datetime.strptime(s, "%Y%m%d")
