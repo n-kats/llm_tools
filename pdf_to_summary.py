@@ -1,10 +1,12 @@
 import argparse
-from openai import OpenAI
-from utils.gpt_4o_utils import to_image_content, run_gpt_4o
-import httpx
 from pathlib import Path
-from utils.voice_utils import VoiceVoxSpeaker, text_to_wav
+
+import httpx
+from openai import OpenAI
 from pdf2image import convert_from_path
+
+from utils.gpt_4o_utils import run_gpt_4o, to_image_content
+from utils.voice_utils import VoiceVoxSpeaker, text_to_wav
 
 
 def download_pdf(url: str, output_path: Path):
