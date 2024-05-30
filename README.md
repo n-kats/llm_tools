@@ -54,3 +54,11 @@ find _cache/daily_summary/ -name "*.json" -type f | while read -r line; do
     --tactic sequence
 done
 ```
+
+
+## PDF_TO_SUMMARY
+1. voicevoxを起動する（`bash ./scripts/launch_voicevox.sh`）
+2. 以下のコマンドを実行する
+```bash
+python pdf_to_summary.py --url "https://arxiv.org/pdf/xxxx.yyyyy.pdf" --output _output --voicevox_url http://localhost:50021
+```

@@ -42,6 +42,9 @@ chromadb = "^0.4.24"
 llama-index-vector-stores-chroma = "^0.1.6"
 ollama = "^0.1.8"
 llama-index-llms-ollama = "^0.1.2"
+pdf-layout-client = {git = "https://github.com/n-kats/pdf-layout-client.git", branch = "main"}
+typed-storage = {git = "https://github.com/n-kats/typed-storage.git", branch = "main"}
+httpx = "^0.27.0"
 
 
 [tool.poetry.group.dev.dependencies]
