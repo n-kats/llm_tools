@@ -6,12 +6,11 @@ import rehypeKatex from 'rehype-katex'
 import 'katex/dist/katex.min.css'
 
 function Markdown({children}: any) {
-  console.log(children)
-    return (
-      <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-            {children.join("")}
-        </ReactMarkdown>
-    );
+  return (
+    <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+      {children.join("")}
+    </ReactMarkdown>
+  );
 };
 
 export default Markdown;

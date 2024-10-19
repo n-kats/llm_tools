@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { MantineProvider, Button, Paper, Grid, Text, Image, Container, Loader } from '@mantine/core'
+import { MantineProvider, Button, Paper, Flex, Grid, Text, Image, Container, Loader, Input } from '@mantine/core'
 import theme from './Theme.tsx'
 import Client from './Client.tsx'
 import UrlInput from './UrlInput.tsx'
@@ -9,7 +9,6 @@ import Markdown from './Markdown.tsx'
 import AudioControl from './Audio.tsx'
 
 export default function DocumentViewer() {
-  const [url, setUrl] = useState('')
   const [requestId, setRequestId] = useState('')
   const [pageNum, setPageNum] = useState(1)
   const [maxPageNum, setMaxPageNum] = useState(1)
@@ -19,80 +18,79 @@ export default function DocumentViewer() {
   const [isInitialized, setIsInitialized] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [volume, setVolume] = useState(0.5)
+  const [speaking, setSpeaking] = useState(true)
+  const [gotoPage, setGotoPage] = useState(1)
   const containerRef = useRef<HTMLDivElement>(null)
   const audioRef = useRef<HTMLAudioElement>(null)
   const client = new Client()
 
+  const generate = async (reqId: string, page: number, regenerate: boolean) => {
+    var error: boolean = false
+    setIsLoading(true)
+    const runExplain = (regenerate ? client.regenerate(reqId, page) : client.explain(reqId, page)).then((explanation: string | null) => {
+      if (explanation !== null) {
+        setExplanation(explanation)
+      } else {
+        error = true
+      }
+    })
+    const runImage = client.image(reqId, page).then((imageUrl: string | null) => {
+      if (imageUrl !== null) {
+        setImageUrl(imageUrl)
+      } else {
+        error = true
+      }
+    })
+    await Promise.all([runExplain, runImage])
+    await client.audio(reqId, page).then((audioUrl: string | null) => {
+      if (audioUrl !== null) {
+        setAudioUrl(audioUrl)
+        setVolumeToAudio(volume)
+        setSpeakingToAudio(speaking)
+      } else {
+        error = true
+      }
+    })
+
+    setIsLoading(false)
+    if (error) {
+      console.error('Error fetching explanation and image')
+    }
+  }
+
   const fetchExplanationAndImage = async (reqId: string, page: number) => {
-    var error: boolean = false
-    setIsLoading(true)
-    const runExplain = client.explain(reqId, page).then((explanation: string | null) => {
-      if (explanation !== null) {
-        setExplanation(explanation)
-      } else {
-        error = true
-      }
-    })
-    const runImage = client.image(reqId, page).then((imageUrl: string | null) => {
-      if (imageUrl !== null) {
-        setImageUrl(imageUrl)
-      } else {
-        error = true
-      }
-    })
-    await Promise.all([runExplain, runImage])
-    await client.audio(reqId, page).then((audioUrl: string | null) => {
-      if (audioUrl !== null) {
-        setAudioUrl(audioUrl)
-      } else {
-        error = true
-      }
-    })
+    return generate(reqId, page, false)
+  }
 
-    setIsLoading(false)
-    if (error) {
-      console.error('Error fetching explanation and image')
+  const setVolumeToAudio = (value: number) => {
+    if (audioRef.current) {
+      audioRef.current.volume = value
     }
   }
 
+  const setSpeakingToAudio = (value: boolean) => {
+    setSpeaking(value)
+    if (audioRef.current) {
+      if (value) {
+        audioRef.current.play()
+      } else {
+        audioRef.current.pause()
+      }
+    }
+  }
+
+  const isFirstPage = () => pageNum === 1
+  const isLastPage = () => pageNum === maxPageNum
+  const isValidPage = (page: number) => page >= 1 && page <= maxPageNum
   const regenerate = async (reqId: string, page: number) => {
-    var error: boolean = false
-    setIsLoading(true)
-    const runExplain = client.regenerate(reqId, page).then((explanation: string | null) => {
-      if (explanation !== null) {
-        setExplanation(explanation)
-      } else {
-        error = true
-      }
-    })
-    const runImage = client.image(reqId, page).then((imageUrl: string | null) => {
-      if (imageUrl !== null) {
-        setImageUrl(imageUrl)
-      } else {
-        error = true
-      }
-    })
-    await Promise.all([runExplain, runImage])
-    await client.audio(reqId, page).then((audioUrl: string | null) => {
-      if (audioUrl !== null) {
-        setAudioUrl(audioUrl)
-      } else {
-        error = true
-      }
-    })
-
-    setIsLoading(false)
-    if (error) {
-      console.error('Error fetching explanation and image')
-    }
+    generate(reqId, page, true)
   }
-
 
   const changePage = (newPage: number) => {
-    const validPage = Math.max(1, Math.min(newPage, maxPageNum))
-    if (validPage !== pageNum) {
-      setPageNum(validPage)
-      fetchExplanationAndImage(requestId, validPage)
+    if (isValidPage(newPage)) {
+      setPageNum(newPage)
+      setGotoPage(newPage)
+      fetchExplanationAndImage(requestId, newPage)
     }
   }
 
@@ -112,32 +110,50 @@ export default function DocumentViewer() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
     }
-  }, [pageNum, maxPageNum, requestId, isInitialized])
+  }, [pageNum, maxPageNum, requestId, isInitialized, volume, speaking])
 
   return (
     <MantineProvider theme={theme}>
       <Container ref={containerRef}>
         <Grid>
           <Grid.Col span={6}>
-            <UrlInput onGetResult={({ request_id, page_num, url }) => {
+            <UrlInput onGetResult={({ request_id, page_num }) => {
               setRequestId(request_id)
               setMaxPageNum(page_num)
               setPageNum(1)
-              setUrl(url)
               setIsInitialized(true)
               fetchExplanationAndImage(request_id, 1)
             }} />
+
+            <Flex gap="xs">
+              <Button onClick={() => changePage(pageNum - 1)} disabled={isFirstPage()}>Previous</Button>
+              <Button onClick={() => changePage(pageNum + 1)} disabled={isLastPage()}>Next</Button>
+              <Button onClick={() => changePage(Math.floor(Math.random() * maxPageNum) + 1)}>Random</Button>
+            </Flex>
+
+            {isInitialized && <>
+              <Text>Page: {pageNum} / {maxPageNum} </Text>
+              <Flex gap="xs">
+                <Input type="number" value={gotoPage} onChange={(event) => setGotoPage(parseInt(event.currentTarget.value))} />
+                <Button onClick={() => changePage(gotoPage)} disabled={!isValidPage(gotoPage)}>Go to page</Button>
+              </Flex></>}
           </Grid.Col>
+
           <Grid.Col span={6}>
-            <Button onClick={() => regenerate(requestId, pageNum)}>Regenerate</Button>
-            <AudioControl volume={volume} setVolume={(value) => {
-              console.log('setting volume')
-              console.log(value)
-              setVolume(value)
-              if (audioRef.current) {
-                audioRef.current.volume = value
-              }
-            }} />
+            <audio ref={audioRef} src={audioUrl} autoPlay></audio>
+            <AudioControl
+              volume={volume}
+              setVolume={(value: number) => {
+                setVolume(value)
+                setVolumeToAudio(value)
+              }}
+              speaking={speaking}
+              setSpeaking={setSpeakingToAudio}
+            />
+
+            <Flex gap="xs">
+              <Button onClick={() => regenerate(requestId, pageNum)}>Regenerate</Button>
+            </Flex>
           </Grid.Col>
         </Grid>
         <Grid type="container">
@@ -145,9 +161,6 @@ export default function DocumentViewer() {
             <Paper>
               {isInitialized && (
                 <>
-                  <Text>URL: {url} </Text>
-                  <Text>Page: {pageNum} / {maxPageNum} </Text>
-                  {!isLoading && (<audio ref={audioRef} src={audioUrl} autoPlay></audio>)}
                   {isLoading ? <Loader /> : <Markdown> {explanation} </Markdown>}
                 </>
               )}
@@ -160,6 +173,6 @@ export default function DocumentViewer() {
           </Grid.Col>
         </Grid>
       </Container>
-    </MantineProvider>
+    </MantineProvider >
   )
 }

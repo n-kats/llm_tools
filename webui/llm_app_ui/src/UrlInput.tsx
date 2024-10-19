@@ -5,7 +5,6 @@ import Client from './Client.tsx'
 interface UrlInputGetResultProps {
   request_id: string;
   page_num: number;
-  url: string;
 }
 
 
@@ -35,7 +34,7 @@ function UrlInput({ onGetResult }: { onGetResult: (result: UrlInputGetResultProp
       if (!valid) {
         return
       }
-      onGetResult({ request_id, page_num, url: values.url })
+      onGetResult({ request_id, page_num})
     })
   })
 
