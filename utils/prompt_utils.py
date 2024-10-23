@@ -64,9 +64,7 @@ def _parse(value: str, type_: Type) -> str | BaseModel:
         try:
             return type_.parse_raw(value)
         except json.JSONDecodeError:
-            raise RuntimeError(
-                f"JSONデコードエラー\n[元データ]\n{raw}\n[修正]\n{value}"
-            )
+            raise RuntimeError(f"JSONデコードエラー\n[元データ]\n{raw}\n[修正]\n{value}")
         except Exception:
             raise RuntimeError(
                 f"パースエラー\n[元データ]{raw}\n\n[期待されるフィールド] {list(type_.model_fields.keys())}"
@@ -76,9 +74,7 @@ def _parse(value: str, type_: Type) -> str | BaseModel:
 
 
 class TypedPrompt(Generic[T_IN, T_OUT]):
-    def __init__(
-        self, template: Template, input_type: Type[T_IN], output_type: Type[T_OUT]
-    ):
+    def __init__(self, template: Template, input_type: Type[T_IN], output_type: Type[T_OUT]):
         self.__template = template
         self.__input_type = input_type
         self.__output_type = output_type
@@ -99,9 +95,7 @@ class TypedPrompt(Generic[T_IN, T_OUT]):
         return cast(T_OUT, _parse(value, self.__output_type))
 
 
-def load_template(
-    template_path: Path, template_root: Optional[Path] = None
-) -> Template:
+def load_template(template_path: Path, template_root: Optional[Path] = None) -> Template:
     if template_root is None:
         template_root = template_path.parent
         template_path = Path(template_path.name)
@@ -133,13 +127,9 @@ class Executor(ABC, Generic[T_IN]):
         typed_prompt: TypedPrompt,
         next_type: Type[BaseModel],
     ) -> Callable[[ExecutionState], tuple[Any, ExecutionState]]:
-        return self._wrap_base_function(
-            self._build_base_function(name, adapter, typed_prompt, next_type)
-        )
+        return self._wrap_base_function(self._build_base_function(name, adapter, typed_prompt, next_type))
 
-    def _wrap_base_function(
-        self, base_function: Callable[[BaseModel], tuple[Any, BaseModel]]
-    ):
+    def _wrap_base_function(self, base_function: Callable[[BaseModel], tuple[Any, BaseModel]]):
         def fn(state: ExecutionState) -> tuple[Any, ExecutionState]:
             for _ in range(state.error_count, self.__max_retry):
                 try:
@@ -208,13 +198,9 @@ class TacticBuilder:
         self.__typed_prompts: dict[str, TypedPrompt] = {}
         self.__input_type = input_type
         self.__current_context_type = input_type
-        self.__functions: list[
-            Callable[[ExecutionState], tuple[ExecutionState, Any]]
-        ] = []
+        self.__functions: list[Callable[[ExecutionState], tuple[ExecutionState, Any]]] = []
 
-    def add_typed_prompt(
-        self, name: str, adapter: Adapter, typed_prompt: TypedPrompt, executor: Executor
-    ):
+    def add_typed_prompt(self, name: str, adapter: Adapter, typed_prompt: TypedPrompt, executor: Executor):
         assert name not in self.__typed_prompts
         self.__typed_prompts[name] = typed_prompt
         next_context_type = create_model(
@@ -222,9 +208,7 @@ class TacticBuilder:
             **{name: (typed_prompt.output_type, None)},
             __base__=self.__current_context_type,
         )  # type: ignore
-        self.__functions.append(
-            executor.build_function(name, adapter, typed_prompt, next_context_type)
-        )
+        self.__functions.append(executor.build_function(name, adapter, typed_prompt, next_context_type))
         self.__current_context_type = next_context_type
 
     def show_typed_prompts(self, file=sys.stdout):
@@ -268,12 +252,10 @@ _last_call = time.perf_counter()
 INTERVAL = 0.5
 
 
-def call_gpt(text, model="gpt-3.5-turbo"):
+def call_gpt(text, model="gpt-4o-mini"):
     global _last_call
     now = time.perf_counter()
     if now - _last_call < INTERVAL:
         time.sleep(INTERVAL - (now - _last_call))
-    completion = openai.chat.completions.create(
-        model=model, messages=[{"role": "user", "content": text}]
-    )
+    completion = openai.chat.completions.create(model=model, messages=[{"role": "user", "content": text}])
     return completion.choices[0].message.content

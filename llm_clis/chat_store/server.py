@@ -170,11 +170,7 @@ class RoomQuery(BaseModel):
 async def get_history(q: RoomQuery) -> list[MessageToRead]:
     session = SessionLocal()
     room = Room.find_by_name(session, q.room_name)
-    messages = (
-        [MessageToRead(**message.to_dict()) for message in room.messages]
-        if room is not None
-        else []
-    )
+    messages = [MessageToRead(**message.to_dict()) for message in room.messages] if room is not None else []
     session.close()
     return messages
 
@@ -212,9 +208,7 @@ async def websocket_endpoint(websocket: WebSocket, room_name: str):
             message_str = data.pop("message", "")
             name = data.pop("name", "")
             now = datetime.utcnow()
-            message = Message(
-                message=message_str, name=name, time=now, meta=data, room=room
-            )
+            message = Message(message=message_str, name=name, time=now, meta=data, room=room)
             session = SessionLocal()
             session.add(message)
             session.commit()

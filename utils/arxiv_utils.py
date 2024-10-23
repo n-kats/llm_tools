@@ -1,5 +1,5 @@
 from functools import cached_property
-from typing import Dict, Sequence, TypeVar, Generic, Callable, Optional, List
+from typing import Dict, Sequence, TypeVar, Generic, Callable, Optional, List, Literal
 from datetime import datetime
 from pathlib import Path
 import yaml
@@ -68,6 +68,7 @@ class ArxivLink(BaseModel):
 
 
 class ArxivSummary(BaseModel):
+    type_: Literal["ArxivSummary"] = "ArxivSummary"
     authors: List[ArxivAuthor]
     categories: List[str]
     comment: Optional[str]
@@ -115,9 +116,7 @@ class ArxivRetriver:
         self.__stop_condition = stop_condition
 
     def iter_per_category(self, category: str):
-        for result in arxiv.Client(
-            page_size=self.__max_count_per_request, delay_seconds=self.__interval_sec
-        ).results(
+        for result in arxiv.Client(page_size=self.__max_count_per_request, delay_seconds=self.__interval_sec).results(
             arxiv.Search(
                 query=f"cat:{category}",
                 sort_by=arxiv.SortCriterion.LastUpdatedDate,

@@ -135,9 +135,7 @@ class TextractClient:
         self.__client = session.client("textract")
 
     def analyze(self, document: bytes):
-        return self.__client.analyze_document(
-            Document={"Bytes": document}, FeatureTypes=["TABLES", "LAYOUT"]
-        )
+        return self.__client.analyze_document(Document={"Bytes": document}, FeatureTypes=["TABLES", "LAYOUT"])
 
 
 PAGE_FORMAT = "page_%06d.pdf"
@@ -173,9 +171,7 @@ def extract_pdf_by_textract(
                 with open(pdf, "rb") as f:
                     response = textract_client.analyze(f.read())
                     results.append(response)
-        output_textract_result.write_text(
-            json.dumps(results, indent=2, ensure_ascii=False)
-        )
+        output_textract_result.write_text(json.dumps(results, indent=2, ensure_ascii=False))
     else:
         results = json.loads(output_textract_result.read_text())
 
@@ -193,13 +189,9 @@ def gather_pdf_parts(results, pdf_images: list[Image]) -> list[PDFPart]:
     pdf_parts = []
     part_index = 0
     image_index = 0
-    for page, (result, page_image) in enumerate(
-        zip(results, pdf_images, strict=True), start=1
-    ):
+    for page, (result, page_image) in enumerate(zip(results, pdf_images, strict=True), start=1):
         id_to_blocks = {block["Id"]: block for block in result["Blocks"]}
-        id_to_layout = {
-            block["Id"]: PDFLayout.from_dict(block) for block in result["Blocks"]
-        }
+        id_to_layout = {block["Id"]: PDFLayout.from_dict(block) for block in result["Blocks"]}
         parent_child_pairs = [
             (block["Id"], child_id)
             for block in result["Blocks"]
@@ -229,11 +221,7 @@ def gather_pdf_parts(results, pdf_images: list[Image]) -> list[PDFPart]:
             if skip:
                 continue
 
-            if (
-                not layout.block_type.is_layout
-                and not layout.block_type.is_table
-                and not layout.block_type.is_figure
-            ):
+            if not layout.block_type.is_layout and not layout.block_type.is_table and not layout.block_type.is_figure:
                 continue
             # if layout.block_type == BlockType.LAYOUT_LIST:
             #     breakpoint()
@@ -281,10 +269,7 @@ def gather_child_texts(block, id_to_blocks, to_children, texts):
 
 
 def extract_pdf_data_to_md(extracted_dir: Path):
-    pdf_parts = [
-        json.loads(line)
-        for line in (extracted_dir / "pdf_parts.jsonl").read_text().splitlines()
-    ]
+    pdf_parts = [json.loads(line) for line in (extracted_dir / "pdf_parts.jsonl").read_text().splitlines()]
     md_path = extracted_dir / "extracted_data.md"
     with md_path.open("w") as md:
         for part in pdf_parts:
@@ -303,13 +288,8 @@ def extract_pdf_data_to_md(extracted_dir: Path):
 
 
 def plot_pdf_parts(pdf_path: Path, extracted_dir: Path):
-    pdf_images = [
-        np.array(image)[..., ::-1].copy() for image in convert_from_path(pdf_path)
-    ]
-    pdf_parts = [
-        json.loads(line)
-        for line in (extracted_dir / "pdf_parts.jsonl").read_text().splitlines()
-    ]
+    pdf_images = [np.array(image)[..., ::-1].copy() for image in convert_from_path(pdf_path)]
+    pdf_parts = [json.loads(line) for line in (extracted_dir / "pdf_parts.jsonl").read_text().splitlines()]
     for part in pdf_parts:
         page = part["page"] - 1
         pdf_image = pdf_images[page]

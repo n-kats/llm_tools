@@ -13,9 +13,10 @@ def to_image_content(image: Image, image_type: str):
     }
 
 
-def run_gpt_4o(client, messages, **kwargs):
-    return (
-        client.chat.completions.create(model="gpt-4o", messages=messages, **kwargs)
-        .choices[0]
-        .message.content
-    )
+def run_gpt_4o(client, messages, model="gpt-4o", json_mode=False, **kwargs):
+    if json_mode:
+        json_object = {"type": "json_object"}
+        assert kwargs.get("response_format", json_object) == json_object
+        kwargs["response_format"] = json_object
+
+    return client.chat.completions.create(model=model, messages=messages, **kwargs).choices[0].message.content

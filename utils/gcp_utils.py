@@ -12,9 +12,7 @@ class GoogleDriveClient:
 
     @classmethod
     def load(cls, credentials_file: Path, share_folder_id: str):
-        credentials = service_account.Credentials.from_service_account_file(
-            credentials_file
-        )
+        credentials = service_account.Credentials.from_service_account_file(credentials_file)
         drive_service = build("drive", "v3", credentials=credentials)
         return cls(drive_service, share_folder_id)
 
@@ -48,11 +46,7 @@ class GoogleDriveClient:
             "mimeType": "application/vnd.google-apps.folder",
             "parents": [parent],
         }
-        subfolder = (
-            self.__drive_service.files()
-            .create(body=subfolder_metadata, fields="id")
-            .execute()
-        )
+        subfolder = self.__drive_service.files().create(body=subfolder_metadata, fields="id").execute()
         id_ = subfolder.get("id")
         self.__cache[(name, parent)] = id_
         return id_

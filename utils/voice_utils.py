@@ -15,17 +15,18 @@ def split_text(text: str, max_length: int, separetors: list[str]):
         return [text]
 
     sub = text[:max_length]
-    candidates = [
-        sub.rsplit(separetor, 1)[0] + separetor
-        for separetor in separetors
-        if separetor in sub
-    ]
+    candidates = [sub.rsplit(separetor, 1)[0] + separetor for separetor in separetors if separetor in sub]
     if candidates:
         pos = max([len(x) for x in candidates])
     else:
         pos = max_length
 
     return [text[:pos]] + split_text(text[pos:], max_length, separetors)
+
+
+def text_to_segment(text: str, speaker: "VoiceVoxSpeaker", max_length=300):
+    texts = split_text(text, max_length, separetors=["。", "、", ". "])
+    return sum([speaker.create_audio_segment(text) for text in texts], AudioSegment.empty())
 
 
 def text_to_wav(text: str, speaker: "VoiceVoxSpeaker", output: Path, max_length=300):
@@ -40,19 +41,19 @@ def text_to_wav(text: str, speaker: "VoiceVoxSpeaker", output: Path, max_length=
 @dataclass
 class VoiceVoxSpeaker:
     speaker_id: str
-    speed: float
     url: str
+    speed: float = 1.0
+    volume: float = 1.0
 
     def create_audio_segment(self, text: str) -> AudioSegment:
-        response = requests.post(
-            f"{self.url}/audio_query", params={"speaker": self.speaker_id, "text": text}
-        )
+        response = requests.post(f"{self.url}/audio_query", params={"speaker": self.speaker_id, "text": text})
 
         if not response.ok:
             raise RuntimeError(f"voicevox api returns {response.status_code}")
 
         synthesis_config = Bson(response.content)
         synthesis_config["speedScale"] = self.speed
+        synthesis_config["volumeScale"] = self.volume
 
         synthesis_response = requests.post(
             f"{self.url}/synthesis?speaker={self.speaker_id}",

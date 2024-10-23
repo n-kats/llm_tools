@@ -82,9 +82,7 @@ def main():
     print("writing to", output)
     output.write_text(all_result)
 
-    speaker = VoiceVoxSpeaker(
-        speaker_id=args.speaker_id, speed=args.speaker_speed, url=args.voicevox_url
-    )
+    speaker = VoiceVoxSpeaker(speaker_id=args.speaker_id, speed=args.speaker_speed, url=args.voicevox_url)
     text_to_wav(all_result, speaker, output_root / f"{pdf_id}.mp3")
     print("done!")
 

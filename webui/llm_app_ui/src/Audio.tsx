@@ -7,8 +7,8 @@ function AudioControl({volume, setVolume, speaking, setSpeaking}: {volume: numbe
 
   return (
     <>
-    <Text>Volume</Text>
-    <Slider
+      <Text>Volume</Text>
+      <Slider
       label="Volume"
       value={volume}
       onChange={setVolume}

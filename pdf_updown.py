@@ -1,17 +1,20 @@
-import fastapi
 import json
+import sys
+from pathlib import Path
+from uuid import uuid4
+
+import fastapi
+import httpx
 import openai
 from dotenv import load_dotenv
-
-from PIL import Image
 from fastapi.staticfiles import StaticFiles
-from pathlib import Path
-from pydantic import BaseModel
-from uuid import uuid4
 from pdf2image import convert_from_path
-import httpx
-from utils.gpt_4o_utils import run_gpt_4o,  to_image_content
+from PIL import Image
+from pydantic import BaseModel
+
+from utils.gpt_4o_utils import run_gpt_4o, to_image_content
 from utils.voice_utils import VoiceVoxSpeaker, text_to_wav
+
 tmp = Path("_tmp/pdf_updown")
 
 load_dotenv()
@@ -26,11 +29,9 @@ else:
     url_to_request_id_path.write_text(json.dumps(url_to_request_id))
 
 
-app.mount(
-    "/static", StaticFiles(directory="./webui/llm_app_ui/dist"), name="static")
+app.mount("/static", StaticFiles(directory="./webui/llm_app_ui/dist"), name="static")
 
-app.mount(
-    "/assets", StaticFiles(directory="./webui/llm_app_ui/dist/assets/"))
+app.mount("/assets", StaticFiles(directory="./webui/llm_app_ui/dist/assets/"))
 
 
 @app.get("/")
@@ -62,6 +63,7 @@ def init(req: InitRequest) -> InitResponse:
     work_dir.mkdir(parents=True, exist_ok=True)
     image_dir.mkdir(parents=True, exist_ok=True)
     if not pdf_path.exists():
+        print(f"[INFO] Download PDF from {req.url}", sys.stderr)
         pdf_path.write_bytes(httpx.get(req.url).content)
     pages = convert_from_path(pdf_path)
     for i, page in enumerate(pages, start=1):
@@ -120,15 +122,23 @@ def generate_explanation(image_path):
     image = Image.open(image_path)
     image_type = "png"
     image_content = to_image_content(image, image_type)
-    response = run_gpt_4o(client, messages=[
-        {
-            "role": "user",
-            "content": [
-                {"type": "text", "text": "これは論文のあるページです。このページに書かれている内容を説明してください。謝辞・参考文献リストはスルーしてください。TeX形式の数式は **必ず** $で囲んでください。"},
-                image_content,
-            ]
-        }
-    ], json_mode=False, model="gpt-4o-mini")
+    response = run_gpt_4o(
+        client,
+        messages=[
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": "これは論文のあるページです。このページに書かれている内容を説明してください。謝辞・参考文献リストはスルーしてください。TeX形式の数式は **必ず** $で囲んでください。",
+                    },
+                    image_content,
+                ],
+            }
+        ],
+        json_mode=False,
+        model="gpt-4o-mini",
+    )
     return response
 
 

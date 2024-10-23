@@ -48,9 +48,7 @@ def build_tactic(
         raise ValueError(f"Unknown tactic: {tactic_name}")
 
 
-def _build_single_tactic(
-    prompt_path: Path, prompt_root: Path | None, max_retry: int, verbose: bool
-):
+def _build_single_tactic(prompt_path: Path, prompt_root: Path | None, max_retry: int, verbose: bool):
     builder = TacticBuilder("create_description", input_type=SummaryText)
 
     builder.add_typed_prompt(
@@ -81,17 +79,13 @@ class KeyWords(BaseModel):
     necessary_knowledge: list[str]
 
 
-def _build_sequence_tactic(
-    prompt_path: Path, prompt_root: Path | None, max_retry: int, verbose: bool
-):
+def _build_sequence_tactic(prompt_path: Path, prompt_root: Path | None, max_retry: int, verbose: bool):
     builder = TacticBuilder("create_description", input_type=ArxivSummary)
     builder.add_typed_prompt(
         "summary_to_description",
         adapter=Adapter.identity(ArxivSummary),
         typed_prompt=TypedPrompt(
-            load_template(
-                Path("./llm_clis/text_to_voice/prompts/templates/arxiv_summary_v2.j2")
-            ),
+            load_template(Path("./llm_clis/text_to_voice/prompts/templates/arxiv_summary_v2.j2")),
             input_type=ArxivSummary,
             output_type=SummaryJP,
         ),
@@ -101,11 +95,7 @@ def _build_sequence_tactic(
         "summary_to_keywords",
         adapter=Adapter.project(ArxivSummary),
         typed_prompt=TypedPrompt(
-            load_template(
-                Path(
-                    "./llm_clis/text_to_voice/prompts/templates/arxiv_summary_to_keywords_v1.j2"
-                )
-            ),
+            load_template(Path("./llm_clis/text_to_voice/prompts/templates/arxiv_summary_to_keywords_v1.j2")),
             input_type=ArxivSummary,
             output_type=KeyWords,
         ),
@@ -131,11 +121,7 @@ def _build_sequence_tactic(
             )
         ),
         typed_prompt=TypedPrompt(
-            load_template(
-                Path(
-                    "./llm_clis/text_to_voice/prompts/templates/arxiv_keywords_to_study_hint.j2"
-                )
-            ),
+            load_template(Path("./llm_clis/text_to_voice/prompts/templates/arxiv_keywords_to_study_hint.j2")),
             input_type=GenerateHintInput,
             output_type=str,
         ),
@@ -147,11 +133,7 @@ def _build_sequence_tactic(
         "output",
         adapter=Adapter.identity(current_type),
         typed_prompt=TypedPrompt(
-            load_template(
-                Path(
-                    "./llm_clis/text_to_voice/prompts/templates/arxiv_summary_v2_output.j2"
-                )
-            ),
+            load_template(Path("./llm_clis/text_to_voice/prompts/templates/arxiv_summary_v2_output.j2")),
             input_type=current_type,
             output_type=str,
         ),
@@ -207,9 +189,7 @@ def summary_text(
     if verbose:
         print(description, file=sys.stderr)
 
-    speaker = VoiceVoxSpeaker(
-        speaker_id=speaker_id, speed=speaker_speed, url=voicevox_url
-    )
+    speaker = VoiceVoxSpeaker(speaker_id=speaker_id, speed=speaker_speed, url=voicevox_url)
     text_to_wav(description, speaker, output)
 
 

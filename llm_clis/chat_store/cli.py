@@ -12,9 +12,7 @@ from .server import MessageToRead, MessageToWrite
 
 
 class ChatClient:
-    def __init__(
-        self, host: str, history_dir: Path = Path.home() / ".cache/chat_store"
-    ):
+    def __init__(self, host: str, history_dir: Path = Path.home() / ".cache/chat_store"):
         self.__host = host
         self.__history_dir = history_dir
 
@@ -30,15 +28,11 @@ class ChatClient:
     def read_history(self, room: str) -> List[MessageToRead]:
         return [
             MessageToRead(**message)
-            for message in requests.get(
-                f"{self.__host}/api/v1/history", json={"room_name": room}
-            ).json()
+            for message in requests.get(f"{self.__host}/api/v1/history", json={"room_name": room}).json()
         ]
 
     def send_message(self, message: MessageToWrite):
-        response = requests.post(
-            f"{self.__host}/api/v1/post_message", json=message.dict()
-        )
+        response = requests.post(f"{self.__host}/api/v1/post_message", json=message.dict())
         self.__history_dir.mkdir(parents=True, exist_ok=True)
         (self.__history_dir / "last_room").write_text(message.room_name)
         print(response.json(), file=sys.stderr)
@@ -95,6 +89,4 @@ class PromptMessageBuilder:
         self.__prompt = prompt
 
     def build(self, text: str, room: str, user: str):
-        return MessageToWrite(
-            message=text, room_name=room, name=user, meta={"prompt": self.__prompt}
-        )
+        return MessageToWrite(message=text, room_name=room, name=user, meta={"prompt": self.__prompt})

@@ -19,8 +19,7 @@ def get_random_audio():
     candidates = [
         p
         for p in root.glob("*/*/*.mp3")
-        if p.parent.parent.name >= "202401"
-        and (p.parent / (p.name + ".description.txt")).exists()
+        if p.parent.parent.name >= "202401" and (p.parent / (p.name + ".description.txt")).exists()
     ]
     i = np.random.randint(len(candidates))
     target = candidates[i]

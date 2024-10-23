@@ -40,12 +40,7 @@ def main():
     for cat in args.categories:
 
         def dump_summary(summary: ArxivSummary):
-            path = (
-                args.output
-                / datedir_name(summary.updated)
-                / cat
-                / f"{summary.short_id}.json"
-            )
+            path = args.output / datedir_name(summary.updated) / cat / f"{summary.short_id}.json"
             json_str = summary.model_dump_json()
             path.parent.mkdir(parents=True, exist_ok=True)
             with open(path, "w") as f_out:

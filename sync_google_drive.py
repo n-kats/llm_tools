@@ -21,9 +21,7 @@ def main():
             if not path.name.endswith(ext):
                 continue
             print(path)
-            client.upload_file(
-                path, path.relative_to(args.target_dir), mimetype, args.overwrite
-            )
+            client.upload_file(path, path.relative_to(args.target_dir), mimetype, args.overwrite)
 
 
 if __name__ == "__main__":
